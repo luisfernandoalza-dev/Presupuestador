@@ -30,8 +30,11 @@
 <body>
   <div class="app-bar">
     <div class="app-brand">
-      <div class="name">ESTUDIO <span>A</span> & ASOCIADOS</div>
-      <div class="sub">Generador de Presupuestos</div>
+      <img class="app-logo" src="assets/img/brand/logo-principal-crop.png" alt="Estudio A & Asociados">
+      <div>
+        <div class="name">Generador de Presupuestos</div>
+        <div class="sub">Estudio A & Asociados</div>
+      </div>
     </div>
     <button class="btn-pdf" type="button" onclick="doPrint()">🖨 PDF</button>
   </div>
@@ -93,6 +96,20 @@
         </div>
 
         <div id="sec-prof">
+          <div class="fsec">
+            <div class="fsec-title">Incluye / No incluye</div>
+            <div class="scope-edit-grid">
+              <div class="scope-edit-col yes">
+                <div class="scope-edit-head">Incluye</div>
+                <div id="scopeYesWrap"></div>
+              </div>
+              <div class="scope-edit-col no">
+                <div class="scope-edit-head">No incluye</div>
+                <div id="scopeNoWrap"></div>
+              </div>
+            </div>
+          </div>
+
           <div class="fsec">
             <div class="fsec-title">Honorarios</div>
             <div class="row2">

@@ -5,11 +5,36 @@ let sectores = [
   { n: 'TAREAS GENERALES', items: [''] }
 ];
 
+const profIncluye = [
+  { text: 'Visita al sitio y relevamiento', on: true },
+  { text: 'Estudio normativo y factibilidad', on: true },
+  { text: 'Definición del programa junto al cliente', on: true },
+  { text: 'Propuesta conceptual del proyecto', on: true },
+  { text: 'Anteproyecto con planos y vistas', on: true },
+  { text: 'Modelado 3D y esquemas de diseño', on: true },
+  { text: 'Selección preliminar de materiales', on: true },
+  { text: 'Documentación lista para cuantificar y presupuestar etapa de ejecución de obra', on: true },
+  { text: 'Supervisión técnica del proceso proyectual y Dirección de Obra', on: true },
+  { text: 'Entrega digital completa en PDF', on: true },
+  { text: 'Acompañamiento y asesoramiento continuo', on: true }
+];
+
+const profNoIncluye = [
+  { text: 'Materiales de construcción', on: true },
+  { text: 'Mano de obra (Se podrá presupuestar por separado una vez definido proyecto y tipo de construcción)', on: true },
+  { text: 'Trámites con prestadoras de servicios', on: true },
+  { text: 'Tasas municipales o deudas', on: true },
+  { text: 'Timbrado de contrato', on: true },
+  { text: 'Impresiones físicas de planos (De obra)', on: true },
+  { text: 'Tareas no detalladas en este presupuesto', on: true }
+];
+
 window.addEventListener('DOMContentLoaded', () => {
   const d = new Date();
   const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   document.getElementById('fFecha').value = `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
   renderSectores();
+  renderScopeEditor();
   calcProf();
   render();
 });
@@ -143,6 +168,18 @@ function renderSectores() {
   });
 }
 
+function renderScopeEditor() {
+  const yesWrap = document.getElementById('scopeYesWrap');
+  const noWrap = document.getElementById('scopeNoWrap');
+  if (!yesWrap || !noWrap) return;
+  yesWrap.innerHTML = profIncluye.map((item, i) => `
+    <label class="scope-check"><input type="checkbox" ${item.on ? 'checked' : ''} onchange="profIncluye[${i}].on=this.checked;render()"><span>${escapeHtml(item.text)}</span></label>
+  `).join('');
+  noWrap.innerHTML = profNoIncluye.map((item, i) => `
+    <label class="scope-check"><input type="checkbox" ${item.on ? 'checked' : ''} onchange="profNoIncluye[${i}].on=this.checked;render()"><span>${escapeHtml(item.text)}</span></label>
+  `).join('');
+}
+
 function addSector() { sectores.push({ n: 'NUEVO SECTOR', items: [''] }); renderSectores(); render(); }
 function delSector(i) { sectores.splice(i, 1); renderSectores(); render(); }
 function addItem(si) { sectores[si].items.push(''); renderSectores(); render(); }
@@ -150,7 +187,7 @@ function delItem(si, ii) { sectores[si].items.splice(ii, 1); if (!sectores[si].i
 function doPrint() { setTab('preview'); render(); setTimeout(() => window.print(), 350); }
 
 function escapeHtml(str = '') {
-  return str
+  return String(str)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -163,11 +200,11 @@ function buildHeader(num_, fecha) {
     <header class="d-header">
       <div class="d-header-left">
         <div class="d-logo-wrap">
-          <img class="d-logo-img" src="assets/img/brand/logo-estudio-a.png" alt="Estudio A & Asociados">
+          <img class="d-logo-img" src="assets/img/brand/logo-principal-crop.png" alt="Estudio A & Asociados">
         </div>
       </div>
       <div class="d-header-right">
-        <div class="d-num">Presupuesto N° ${num_}</div>
+        <div class="d-num">Presupuesto N° ${escapeHtml(num_)}</div>
         <div class="d-date">${escapeHtml(fecha)}</div>
       </div>
     </header>`;
@@ -177,8 +214,7 @@ function buildFooter() {
   return `
     <footer class="d-footer">
       <div class="d-footer-brand">
-        <div class="n">ESTUDIO A & ASOCIADOS</div>
-        <div class="sub">Arquitectura · Japandi · BIM</div>
+        <img class="d-footer-logo" src="assets/img/brand/logo-secundario-crop.png" alt="Estudio A Arquitectura">
       </div>
       <div class="d-footer-info">
         <strong>Arq. Ignacio Abraham</strong> — Mat. CAPBA DIX 31.528<br>
@@ -192,10 +228,16 @@ function buildPage(title, bodyHtml, num_, fecha) {
   return `
     <section class="doc-page">
       ${buildHeader(num_, fecha)}
-      <div class="d-title-bar"><div class="d-title">${title}</div></div>
+      <div class="d-title-bar"><div class="d-title">${escapeHtml(title)}</div></div>
       <div class="d-body">${bodyHtml}</div>
       ${buildFooter()}
     </section>`;
+}
+
+function buildScopeItems(items, dim = false) {
+  const valid = items.filter(item => item.on);
+  if (!valid.length) return '<div class="d-item empty">Sin ítems seleccionados.</div>';
+  return valid.map(item => `<div class="d-item${dim ? ' dim' : ''}">${escapeHtml(item.text)}</div>`).join('');
 }
 
 function render() {
@@ -226,48 +268,38 @@ function render() {
     const totalWords = totalProf ? `Pesos ${toWords(totalProf)}` : '';
 
     const page1Body = `
-      <div class="d-client">
+      <div class="d-client d-client-prof">
         ${cli ? `<div class="d-crow"><span class="d-clabel">Cliente:</span><span class="d-cval"><strong>${escapeHtml(cli)}</strong></span></div>` : ''}
         ${con ? `<div class="d-crow"><span class="d-clabel">Contacto:</span><span class="d-cval">${escapeHtml(con)}</span></div>` : ''}
         ${ubi ? `<div class="d-crow"><span class="d-clabel">Ubicación:</span><span class="d-cval">${escapeHtml(ubi)}</span></div>` : ''}
       </div>
 
+      <div class="d-thanks">Gracias por confiar en <strong>Estudio A.</strong></div>
+
+      <p class="d-copy-main">Cada proyecto es una oportunidad para transformar ideas en espacios que mejoran la vida. Diseñamos esta propuesta con compromiso, escucha activa y una mirada profesional para acompañarte en todo el proceso.</p>
+
       <div class="d-tagline"><em>Escuchamos, Interpretamos, Creamos</em></div>
 
-      <p class="d-intro">
-        Nuestra metodología pone el foco en estar presentes en cada etapa, entendiendo tus necesidades y proyectando soluciones direccionadas.${desc ? `<br>Esta propuesta contempla: <em>${escapeHtml(desc)}</em>` : ''}
-      </p>
+      <p class="d-copy-main d-copy-after">Nuestra metodología pone el foco en estar presentes en cada etapa, entendiendo tus necesidades y proyectando soluciones direccionadas.</p>
+      <div class="d-pre-scope">Esta propuesta contempla:</div>
 
-      <div class="d-inc-grid">
+      <div class="d-inc-grid prof-grid">
         <div class="d-inc-col yes">
           <div class="d-inc-title">Incluye</div>
-          <div class="d-item">Visita al sitio y relevamiento</div>
-          <div class="d-item">Estudio normativo y factibilidad</div>
-          <div class="d-item">Definición del programa junto al cliente</div>
-          <div class="d-item">Propuesta conceptual del proyecto</div>
-          <div class="d-item">Anteproyecto con planos y vistas</div>
-          <div class="d-item">Modelado 3D y esquemas de diseño</div>
-          <div class="d-item">Selección preliminar de materiales</div>
-          <div class="d-item">Documentación lista para cuantificar y presupuestar ejecución de obra</div>
-          <div class="d-item">Supervisión técnica y Dirección de Obra</div>
-          <div class="d-item">Entrega digital completa en PDF</div>
-          <div class="d-item">Acompañamiento y asesoramiento continuo</div>
+          ${buildScopeItems(profIncluye, false)}
         </div>
         <div class="d-inc-col no">
           <div class="d-inc-title dim">No incluye</div>
-          <div class="d-item dim">Materiales de construcción</div>
-          <div class="d-item dim">Mano de obra (se presupuesta por separado)</div>
-          <div class="d-item dim">Trámites con prestadoras de servicios</div>
-          <div class="d-item dim">Tasas municipales o deudas</div>
-          <div class="d-item dim">Timbrado de contrato</div>
-          <div class="d-item dim">Impresiones físicas de planos</div>
-          <div class="d-item dim">Tareas no detalladas en este presupuesto</div>
+          ${buildScopeItems(profNoIncluye, true)}
         </div>
       </div>`;
 
     const page2Body = `
-      <div class="d-hon">
-        <div class="d-hon-title">Honorarios Profesionales</div>
+      <div class="d-detail-title">Detalle de la Propuesta</div>
+      <p class="d-desc-block">${escapeHtml(desc || 'Completá el alcance de la propuesta desde el formulario para visualizar aquí el detalle específico del trabajo.')}</p>
+
+      <div class="d-hon-block-title">Honorarios Profesionales</div>
+      <div class="d-hon d-hon-prof">
         <div class="d-hon-row">
           <span class="d-hon-label">Honorarios Profesionales</span>
           <span class="d-hon-val">${hon ? fmt(hon) : '–'}</span>
@@ -276,12 +308,13 @@ function render() {
           <span class="d-hon-label">Gastos Colegiales</span>
           <span class="d-hon-val">${colegNum ? fmt(colegNum) : escapeHtml(coleg)}</span>
         </div>
-        <div class="d-total-row">
-          <span class="d-total-label">Total</span>
-          <div>
-            <div class="d-total-amt">${totalStr}</div>
-            ${totalWords ? `<div class="d-total-words">(${totalWords})</div>` : ''}
-          </div>
+      </div>
+
+      <div class="d-total-row total-standalone">
+        <span class="d-total-label">Total:</span>
+        <div>
+          <div class="d-total-amt">${totalStr}</div>
+          ${totalWords ? `<div class="d-total-words">(${totalWords})</div>` : ''}
         </div>
       </div>
 
@@ -307,7 +340,10 @@ function render() {
         </div>
       </div>
 
-      <div class="d-grat">Gracias por permitirnos ser parte de este proyecto &nbsp;—&nbsp; <em>Estamos para acompañarlos en cada paso</em></div>`;
+      <div class="d-grat">
+        <div class="d-grat-main">Gracias por permitirnos ser parte de este proyecto.</div>
+        <div class="d-grat-sub">Estamos para acompañarte en cada paso.</div>
+      </div>`;
 
     out.innerHTML = `${buildPage('Presupuesto de Tareas Profesionales', page1Body, num_, fecha)}${buildPage('Presupuesto de Tareas Profesionales', page2Body, num_, fecha)}`;
   } else {
